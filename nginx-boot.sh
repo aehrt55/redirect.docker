@@ -9,6 +9,7 @@ export NGINX_CONF=/etc/nginx/mushed.conf
 export HSTS=${HSTS:-0}
 export HSTS_MAX_AGE=${HSTS_MAX_AGE:-31536000}
 export HSTS_INCLUDE_SUBDOMAINS=${HSTS_INCLUDE_SUBDOMAINS:-0}
+export HEALTH_CHECK_PATH=${HEALTH_CHECK_PATH:-/health_check}
 
 # Build config
 cat <<EOF > $NGINX_CONF
@@ -26,7 +27,12 @@ http {
         $([ "${HSTS}" != "0" ] && echo "
         add_header Strict-Transport-Security \"max-age=${HSTS_MAX_AGE};$([ "${HSTS_INCLUDE_SUBDOMAINS}" != "0" ] && echo "includeSubDomains")\";
         ")
-        rewrite ^(.*) $REDIRECT\$1 $REDIRECT_TYPE;
+        location = $HEALTH_CHECK_PATH {
+            return 200 "OK";
+        }
+        location / {
+            rewrite ^(.*) $REDIRECT\$1 $REDIRECT_TYPE;
+        }
     }
 }
 
